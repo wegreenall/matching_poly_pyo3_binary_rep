@@ -249,13 +249,11 @@ pub fn get_deck(graph: &Graph) -> Vec<Graph>{
 
 #[pyfunction]
 pub fn calculate_matching_polynomial_from_binary_representation(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
-    // Produce the graph
-    //println!("Beginning Rust program");
-    //let graph = Graph::new(data);
     let graph = Graph::new(data);
-
     let deck = get_deck(&graph);
     let mut polies = Vec::<Vec<u64>>::new();
+
+    let mut thread_handles = Vec::<thread::JoinHandle<Polynomial<u64>>>::new();
 
     // now get that polynomial!
     let graph_poly = _calculate_matching_polynomial_binary(graph);
@@ -263,11 +261,19 @@ pub fn calculate_matching_polynomial_from_binary_representation(data: [usize; me
 
     for graph in deck {
         // spawn a thread for each graph in the deck
-        let graph_poly = _calculate_matching_polynomial_binary(graph);
+        let handle = thread::spawn(move || {
+            _calculate_matching_polynomial_binary(graph)
+        });
+        thread_handles.push(handle);
+        //let graph_poly = _calculate_matching_polynomial_binary(graph);
+        //polies.push(graph_poly.data().to_vec());
+    }
+    for handle in thread_handles {
+        let graph_poly = handle.join().unwrap();
         polies.push(graph_poly.data().to_vec());
     }
 
-    
+    Ok(polies)
 
     //println!("{}", graph);
     //let poly = Polynomial::new(vec![1, 2, 3, 4]);
@@ -298,7 +304,6 @@ pub fn calculate_matching_polynomial_from_binary_representation(data: [usize; me
     //let poly = _calculate_matching_polynomial_binary(graph);
     //println!("Matching Polynomial: {:?}", poly);
     //Ok(poly.data().to_vec())
-    Ok(polies)
 }
 
 pub fn _calculate_matching_polynomial_binary(graph: Graph) -> Polynomial<u64> {
