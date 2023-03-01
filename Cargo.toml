@@ -1,0 +1,19 @@
+[package]
+name = "matching_poly_binary"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+petgraph = "0.6.3"
+polynomial = "0.2.4"
+pyo3 = "0.18.1"
+serde = "1.0.152"
+
+[lib]
+name = "matching_rs"
+crate-type = ["cdylib"]
+
+
+
