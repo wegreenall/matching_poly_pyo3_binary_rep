@@ -165,6 +165,100 @@ impl std::fmt::Display for Graph {
     }
 }
 
+
+pub fn get_deck(graph: &Graph) -> Vec<Graph>{
+    let mut deck = Vec::<Graph>::new();
+    let graph_size = graph.graph_size();
+    for i in 0..graph_size {
+        //println!("current graph: {}", current_graph);
+        let mut current_graph = graph.clone();
+        current_graph.remove_node(i, graph_size); 
+        deck.push(current_graph.clone());
+    }
+    deck
+}
+
+#[pyfunction]
+pub fn calculate_matching_polynomial_from_binary_representation_multithreaded(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
+    let graph = Graph::new(data);
+    let deck = get_deck(&graph);
+    let mut polies = Vec::<Vec<u64>>::new();
+
+    let mut thread_handles = Vec::<thread::JoinHandle<Polynomial<u64>>>::new();
+
+    // now get that polynomial!
+    let graph_poly = _calculate_matching_polynomial_binary(graph);
+    polies.push(graph_poly.data().to_vec());
+
+    for graph in deck {
+        // spawn a thread for each graph in the deck
+        let handle = thread::spawn(move || {
+            _calculate_matching_polynomial_binary(graph)
+        });
+        thread_handles.push(handle);
+        //let graph_poly = _calculate_matching_polynomial_binary(graph);
+        //polies.push(graph_poly.data().to_vec());
+    }
+    for handle in thread_handles {
+        let graph_poly = handle.join().unwrap();
+        polies.push(graph_poly.data().to_vec());
+    }
+
+    Ok(polies)
+
+}
+
+#[pyfunction]
+pub fn calculate_matching_polynomial_from_binary_representation(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
+    let graph = Graph::new(data);
+    let deck = get_deck(&graph);
+    let mut polies = Vec::<Vec<u64>>::new();
+
+    //let mut thread_handles = Vec::<thread::JoinHandle<Polynomial<u64>>>::new();
+
+    // now get that polynomial!
+    let graph_poly = _calculate_matching_polynomial_binary(graph);
+    polies.push(graph_poly.data().to_vec());
+
+    for graph in deck {
+        // spawn a thread for each graph in the deck
+        let poly = _calculate_matching_polynomial_binary(graph);
+        polies.push(poly.data().to_vec());
+    }
+
+    Ok(polies)
+}
+
+pub fn _calculate_matching_polynomial_binary(graph: Graph) -> Polynomial<u64> {
+    // the base case for the process is that the graph is edgeless.
+    // This means that, of the remaining nodes, each of their integer
+    // representations is a power of two.
+    if graph.edgeless() { // i.e. we're at the base case.
+        // produce a sequence of coefficients the same length as the number of vertices
+        //println!("Hit edgeless graph! with {} nodes", graph.edgeless_node_count());
+        let mut coeffics = vec![0; graph.edgeless_node_count()];
+        coeffics.push(1);
+        let poly = Polynomial::new(coeffics);
+        //println!("Polynomial: {:?}", poly);
+        //println!("graph {:?}", graph.data);
+        return poly
+    } else {
+        // get G' and G''
+        // G' = G - an edge
+        // G'' = G - the nodes connected to the edge removed to get G'
+        //println!("graph {:?}", &graph.data);
+        let (graph_prime, graph_prime_prime) = graph.get_graph_primes();
+        //println!("graph {:?}", &graph.data);
+        //println!("graph_prime {:?}", &graph_prime.data);
+        //println!("graph_prime_prime {:?}", &graph_prime_prime.data);
+
+        let poly_1 = _calculate_matching_polynomial_binary(graph_prime);
+        let poly_2 = _calculate_matching_polynomial_binary(graph_prime_prime);
+        let poly = poly_1 + poly_2;
+        return poly
+    }
+} 
+
 //fn drop_last_nodes(graph: &Graph) -> Graph {
     //// first, get the top node, and its edge.
     ////  the logic will be the same as in the drop_last_edge function
@@ -234,104 +328,3 @@ impl std::fmt::Display for Graph {
     //new_graph.remove_edge(starting_node, end_node);
     //new_graph
 //}
-
-pub fn get_deck(graph: &Graph) -> Vec<Graph>{
-    let mut deck = Vec::<Graph>::new();
-    let graph_size = graph.graph_size();
-    for i in 0..graph_size {
-        //println!("current graph: {}", current_graph);
-        let mut current_graph = graph.clone();
-        current_graph.remove_node(i, graph_size); 
-        deck.push(current_graph.clone());
-    }
-    deck
-}
-
-#[pyfunction]
-pub fn calculate_matching_polynomial_from_binary_representation(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
-    let graph = Graph::new(data);
-    let deck = get_deck(&graph);
-    let mut polies = Vec::<Vec<u64>>::new();
-
-    let mut thread_handles = Vec::<thread::JoinHandle<Polynomial<u64>>>::new();
-
-    // now get that polynomial!
-    let graph_poly = _calculate_matching_polynomial_binary(graph);
-    polies.push(graph_poly.data().to_vec());
-
-    for graph in deck {
-        // spawn a thread for each graph in the deck
-        let handle = thread::spawn(move || {
-            _calculate_matching_polynomial_binary(graph)
-        });
-        thread_handles.push(handle);
-        //let graph_poly = _calculate_matching_polynomial_binary(graph);
-        //polies.push(graph_poly.data().to_vec());
-    }
-    for handle in thread_handles {
-        let graph_poly = handle.join().unwrap();
-        polies.push(graph_poly.data().to_vec());
-    }
-
-    Ok(polies)
-
-    //println!("{}", graph);
-    //let poly = Polynomial::new(vec![1, 2, 3, 4]);
-
-    // now test the features of the graph
-    //graph.remove_node(0);
-    //println!("graph after removing node 0 {}", &graph);
-    //println!("Should be:0,127,63,31,15,7,3,1");
-    //graph.remove_edge(1, 2);
-    //println!("graph after removing node 0 and edge (1, 2): {}", &graph);
-    //println!("Should be:0,95,63,31,15,7,3,1");
-
-    // testing drop last node
-    //graph_2 = graph_2.drop_last_nodes();
-    //println!("original graph after drop last node: {}", &graph_2);
-    //println!("Should be:0,127,63,31,15,7,3,1");
-    //graph_2 = graph_2.drop_last_nodes();
-    //println!("original graph after drop last node twice: {}", &graph_2);
-    //println!("Should be:0,0,63,31,15,7,3,1");
-
-    //testing drop last edge
-    //graph_3 = graph_3.drop_last_edge();
-    //println!("original graph after drop last edge: {}", &graph_3);
-    //println!("Should be:191,127,63,31,15,7,3,1");
-    //graph_3 = graph_3.drop_last_edge();
-    //println!("original graph after drop last edge twice: {}", &graph_3);
-    //println!("Should be: 159,127,63,31,15,7,3,1");
-    //let poly = _calculate_matching_polynomial_binary(graph);
-    //println!("Matching Polynomial: {:?}", poly);
-    //Ok(poly.data().to_vec())
-}
-
-pub fn _calculate_matching_polynomial_binary(graph: Graph) -> Polynomial<u64> {
-    // the base case for the process is that the graph is edgeless.
-    // This means that, of the remaining nodes, each of their integer
-    // representations is a power of two.
-    if graph.edgeless() { // i.e. we're at the base case.
-        // produce a sequence of coefficients the same length as the number of vertices
-        //println!("Hit edgeless graph! with {} nodes", graph.edgeless_node_count());
-        let mut coeffics = vec![0; graph.edgeless_node_count()];
-        coeffics.push(1);
-        let poly = Polynomial::new(coeffics);
-        //println!("Polynomial: {:?}", poly);
-        //println!("graph {:?}", graph.data);
-        return poly
-    } else {
-        // get G' and G''
-        // G' = G - an edge
-        // G'' = G - the nodes connected to the edge removed to get G'
-        //println!("graph {:?}", &graph.data);
-        let (graph_prime, graph_prime_prime) = graph.get_graph_primes();
-        //println!("graph {:?}", &graph.data);
-        //println!("graph_prime {:?}", &graph_prime.data);
-        //println!("graph_prime_prime {:?}", &graph_prime_prime.data);
-
-        let poly_1 = _calculate_matching_polynomial_binary(graph_prime);
-        let poly_2 = _calculate_matching_polynomial_binary(graph_prime_prime);
-        let poly = poly_1 + poly_2;
-        return poly
-    }
-} 

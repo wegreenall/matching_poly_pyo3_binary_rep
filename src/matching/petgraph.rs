@@ -39,7 +39,7 @@ fn drop_last_nodes(graph: &StableGraph<i32, (), Undirected>) -> StableGraph<i32,
     new_graph
 }
 
-fn _calculate_matching_polynomial(graph: StableGraph<i32, (), Undirected>) -> Polynomial<i32> {
+fn _calculate_matching_polynomial(graph: StableGraph<i32, (), Undirected>) -> Polynomial<u64> {
     //let mut poly = Polynomial::new(vec![0]);
     // get a sequence of zeroes equal to the number of nodes
     if graph.edge_count() == 0 { // i.e. we're at the base case.
@@ -55,13 +55,23 @@ fn _calculate_matching_polynomial(graph: StableGraph<i32, (), Undirected>) -> Po
 
         let poly_1 = _calculate_matching_polynomial(graph_prime);
         let poly_2 = _calculate_matching_polynomial(graph_prime_prime);
-        let poly = poly_1 - poly_2;
+        let poly = poly_1 + poly_2;
         return poly
     }
 }
 
+fn get_deck(graph: StableGraph<i32, (), Undirected>) -> Vec<StableGraph<i32, (), Undirected>> {
+    let mut deck = Vec::new();
+    for node in graph.node_indices() {
+        let mut new_graph = graph.clone();
+        new_graph.remove_node(node);
+        deck.push(new_graph);
+    }
+    deck
+}
+
 #[pyfunction]
-pub fn calculate_matching_polynomial_from_adjacency(input_graph: Vec<Vec<i32>>) -> Result<Vec<i32>, std::io::Error> {
+pub fn calculate_matching_polynomial_from_adjacency(input_graph: Vec<Vec<i32>>) -> Result<Vec<Vec<u64>>, std::io::Error> {
     // Produce the graph
     // First, build the iterator of elements
     // If a node has no edges attached to it, construct a node, else construct the edges
@@ -71,7 +81,7 @@ pub fn calculate_matching_polynomial_from_adjacency(input_graph: Vec<Vec<i32>>) 
         // add the nodes and their edges to the graph
         // if the node has no edges, add it as a node
         if node.iter().sum::<i32>() == 0 {
-            graph.add_node(1 as i32);
+            graph.add_node(i as i32);
         } else {
             // otherwise, add the edges
             for edge in node {
@@ -80,23 +90,31 @@ pub fn calculate_matching_polynomial_from_adjacency(input_graph: Vec<Vec<i32>>) 
         }
 
     }
-
     let graph = StableGraph::<i32, (), Undirected>::from(graph);
-
-    //// now get that polynomial!
-    let poly = _calculate_matching_polynomial(graph);
-
-    Ok(poly.data().to_vec())
+    
+    Ok(get_matching_polies_stable_graph(graph))
 } 
 
+fn get_matching_polies_stable_graph(graph: StableGraph<i32, (), Undirected>) -> Vec<Vec<u64>> {
+    let mut polies = Vec::<Vec<u64>>::new();
+    let deck = get_deck(graph.clone());
+
+    // get the matching polynomial of the graph
+    let matching_poly = _calculate_matching_polynomial(graph);
+    polies.push(matching_poly.data().to_vec());
+
+    // also get the deck
+    for subgraph in deck {
+        let matching_poly = _calculate_matching_polynomial(subgraph);
+        polies.push(matching_poly.data().to_vec());
+    }
+
+    polies
+}
 #[pyfunction]
-pub fn calculate_matching_polynomial_from_edges(graph: Vec<(u32, u32)>) -> Result<Vec<i32>, std::io::Error> {
+pub fn calculate_matching_polynomial_from_edges(graph: Vec<(u32, u32)>) -> Result<Vec<Vec<u64>>, std::io::Error> {
     // Produce the graph
     let graph = UnGraph::<i32, ()>::from_edges(&graph);
     let graph = StableGraph::<i32, (), Undirected>::from(graph);
-
-    // now get that polynomial!
-    let poly = _calculate_matching_polynomial(graph);
-
-    Ok(poly.data().to_vec())
+    Ok(get_matching_polies_stable_graph(graph))
 } 
