@@ -36,7 +36,9 @@ impl Graph {
         let shift = graph_size.saturating_sub(node2);
         //println!("before edge removal: {:b}", self.data[node1]);
          
-        // zero the ith from the left
+        // zero the ith from the right
+        println!("shift: {}", shift);
+        println!("graph_size: {}", graph_size);
         self.data[node1] &= (!(1 << (shift-1))) as usize; 
     }
 
@@ -150,14 +152,15 @@ impl Graph {
         // removed
         //  the edge to drop goes between the starting node and the end of the first edge
         let clean_starting_node_data = starting_node_data &!(1<<(graph_size - starting_node - 1));
-        let end_node: usize;
+        let mut end_node: usize = 0;
         if drop_most_connected_edge {
             end_node = clean_starting_node_data.leading_zeros() as usize - comparison_point;
         } else {
             // the edge to drop goes between the starting node and the end of its last edge
-            end_node = starting_node_data.trailing_zeros() as usize;
+            let trailing_zeros = clean_starting_node_data.trailing_zeros() as usize + 1;
+            end_node = graph_size.saturating_sub(trailing_zeros);
         }
-        let print_stuff: bool = false;
+        let print_stuff: bool = true;
         if print_stuff {
             println!("\n");
             println!("starting_node {}", starting_node);
