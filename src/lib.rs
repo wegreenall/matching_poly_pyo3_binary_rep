@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use crate::matching::{calculate_matching_polynomial_from_edges, calculate_matching_polynomial_from_adjacency, calculate_matching_polynomial_from_binary_representation};
+use crate::matching::{calculate_matching_polynomial_from_edges, calculate_matching_polynomial_from_adjacency, calculate_matching_polynomial_from_binary_representation, calculate_matching_polynomial_from_binary_representation_multithreaded};
 mod matching;
 
 //fn main() {
@@ -21,5 +21,6 @@ fn matching_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(calculate_matching_polynomial_from_edges))?;
     m.add_wrapped(wrap_pyfunction!(calculate_matching_polynomial_from_adjacency))?;
     m.add_wrapped(wrap_pyfunction!(calculate_matching_polynomial_from_binary_representation))?;
+    m.add_wrapped(wrap_pyfunction!(calculate_matching_polynomial_from_binary_representation_multithreaded))?;
     Ok(())
 }
