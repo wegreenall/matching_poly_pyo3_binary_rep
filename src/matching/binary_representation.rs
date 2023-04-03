@@ -81,16 +81,21 @@ impl Graph {
     } 
 
     pub fn get_graph_primes(self) -> (Graph, Graph) {
-        let (start_node, end_node, graph_size) = self.get_relevant_edge();
         let mut new_graph = self.clone();
         let mut new_graph2 = self.clone();
+
+        // get the relevant edge
+        let (start_node, end_node, graph_size) = self.get_relevant_edge();
+
+        // G' = G - e
         new_graph.remove_edge(start_node, end_node, graph_size);
         
+        // G'' = G - {v, w} where {w, v} are the nodes connected to e
         new_graph2.remove_node(start_node, graph_size);
         new_graph2.remove_node(end_node, graph_size);
         (new_graph, new_graph2)
     }
-    /// To step through and calculate the amtchingpolynomial, we use the edge
+    /// To step through and calculate the matching polynomial, we use the edge
     /// remove recurrence:
     /// Q(g, x) = Q(G', x) - Q(G'', x)
     ///
@@ -104,8 +109,15 @@ impl Graph {
     /// graph, since it the nodes at its ends will be the "most connected" 
     /// nodes.
     fn get_relevant_edge(&self) -> (usize, usize, usize) {
-        // since the nodes are ordered in decreasing order of degree, we can
+        // since the nodes are ordered in INCREASING order of degree, we can
         // just drop the first edge we find, on the first still-relevant node.
+        // starting_node: the index of the first node that still has edges from it
+
+        // if drop_most_connected_edge is true, we delete the first connected edge
+        // we find on the first relevant node. Otherwise, we delete the "last"
+        // edge for the first relevant node.
+        let drop_most_connected_edge: bool = false;
+
         let starting_node = self.data
             .iter()
             .enumerate()
@@ -118,13 +130,15 @@ impl Graph {
         // the first relevant node is a number like: (1, 0, 0, 1, 1, 0, 1). 
         // the next one would be e.g.:               (0, 1, 1, 0, 1, 1, 0) 
         // i.e. 1 on the diagonal.
-        // The RELEVANT data then is the node minus the 1 on the diagonal is 
-        // node_data - (1<<node_index)
+        // The RELEVANT data, not including the diagonal one to represent its inclusion in the
+        // graph, is then the node minus the 1 on the diagonal.
+        // Later, we will calculate:
+        //              node_data - (1<<node_index)
         let starting_node_data = self.data[starting_node];
-        //let starting_node_data = self.data[starting_node] - (1<<starting_node);
         
         // now we have the relevant starting node, we can calculate the edge to drop
-        // by finding the first bit that is set to 1
+        // by finding the LAST bit that is set to 1. First, however, we need to
+        // calculate the offset due to non-usize sized grpahs.
                                                                                 
         //The first relevant node has some leading zeros up to its relevant diagonal,
         //a 1, and then a set of leading zeros up to the first edge.
@@ -134,10 +148,15 @@ impl Graph {
         let graph_size = MAX_NODES.saturating_sub(comparison_point);
         // clean starting node data: the integer corresponding to the node with its first power of two
         // removed
-        let clean_starting_node_data = starting_node_data &!(1<<(graph_size - starting_node - 1));
-
         //  the edge to drop goes between the starting node and the end of the first edge
-        let end_node = clean_starting_node_data.leading_zeros() as usize - comparison_point;
+        let clean_starting_node_data = starting_node_data &!(1<<(graph_size - starting_node - 1));
+        let end_node: usize;
+        if drop_most_connected_edge {
+            end_node = clean_starting_node_data.leading_zeros() as usize - comparison_point;
+        } else {
+            // the edge to drop goes between the starting node and the end of its last edge
+            end_node = starting_node_data.trailing_zeros() as usize;
+        }
         let print_stuff: bool = false;
         if print_stuff {
             println!("\n");
