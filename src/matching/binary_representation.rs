@@ -34,11 +34,8 @@ impl Graph {
     pub fn remove_edge(&mut self, node1: usize, node2: usize, graph_size: usize) {
         // remove edge from adjacency list
         let shift = graph_size.saturating_sub(node2);
-        //println!("before edge removal: {:b}", self.data[node1]);
          
         // zero the ith from the right
-        println!("shift: {}", shift);
-        println!("graph_size: {}", graph_size);
         self.data[node1] &= (!(1 << (shift-1))) as usize; 
     }
 
@@ -57,8 +54,6 @@ impl Graph {
     pub fn graph_size(&self) -> usize{
         self.data
             .iter()
-            //.enumerate()
-            //.map(|(i, x)| x>>i)
             .filter(|x| x> &&(0 as usize)) // i.e. get the ones that are valid
             .count()
     }
@@ -79,7 +74,6 @@ impl Graph {
         self.data
             .iter()
             .all(|x| x == &(0 as usize) || x.is_power_of_two())
-            //.all(|x| x.is_power_of_two())
     } 
 
     pub fn get_graph_primes(self) -> (Graph, Graph) {
@@ -118,7 +112,7 @@ impl Graph {
         // if drop_most_connected_edge is true, we delete the first connected edge
         // we find on the first relevant node. Otherwise, we delete the "last"
         // edge for the first relevant node.
-        let drop_most_connected_edge: bool = false;
+        let drop_first_connected_edge: bool = false;
 
         let starting_node = self.data
             .iter()
@@ -153,14 +147,14 @@ impl Graph {
         //  the edge to drop goes between the starting node and the end of the first edge
         let clean_starting_node_data = starting_node_data &!(1<<(graph_size - starting_node - 1));
         let mut end_node: usize = 0;
-        if drop_most_connected_edge {
+        if drop_first_connected_edge {
             end_node = clean_starting_node_data.leading_zeros() as usize - comparison_point;
         } else {
             // the edge to drop goes between the starting node and the end of its last edge
             let trailing_zeros = clean_starting_node_data.trailing_zeros() as usize + 1;
             end_node = graph_size.saturating_sub(trailing_zeros);
         }
-        let print_stuff: bool = true;
+        let print_stuff: bool = false;
         if print_stuff {
             println!("\n");
             println!("starting_node {}", starting_node);
