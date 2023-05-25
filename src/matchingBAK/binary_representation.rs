@@ -17,7 +17,7 @@ pub struct Graph {
 }
 
 impl Graph {
-    fn new(data: [usize; size_of::<usize>()*8]) -> Graph {
+    pub fn new(data: [usize; size_of::<usize>()*8]) -> Graph {
         Graph {
             data,
         }
@@ -25,8 +25,8 @@ impl Graph {
     pub fn remove_node(&mut self, node: usize, graph_size : usize) {
         // remove node from adjacency list
         self.data[node] = 0;
-        // zero the ith from the left
-        //self.data[node] &= !(1 << (graph_size.saturating_sub(node+1))); 
+
+        // Now remove its connected edges
         self.data.iter_mut()
             .for_each(|x| *x &= !(1<<graph_size.saturating_sub(node+1)));
     }
@@ -91,6 +91,7 @@ impl Graph {
         new_graph2.remove_node(end_node, graph_size);
         (new_graph, new_graph2)
     }
+
     /// To step through and calculate the matching polynomial, we use the edge
     /// remove recurrence:
     /// Q(g, x) = Q(G', x) - Q(G'', x)
@@ -123,8 +124,8 @@ impl Graph {
             .unwrap()
             .0;
 
-        // the first relevant node is a number like: (1, 0, 0, 1, 1, 0, 1). 
-        // the next one would be e.g.:               (0, 1, 1, 0, 1, 1, 0) 
+        // the first relevant node is a number like: (1  0  0  1  1  0  1)
+        // the next one would be e.g.:               (0  1  1  0  1  1  0) 
         // i.e. 1 on the diagonal.
         // The RELEVANT data, not including the diagonal one to represent its inclusion in the
         // graph, is then the node minus the 1 on the diagonal.
@@ -194,57 +195,6 @@ pub fn get_deck(graph: &Graph) -> Vec<Graph>{
     deck
 }
 
-#[pyfunction]
-pub fn calculate_matching_polynomial_from_binary_representation_multithreaded(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
-    let graph = Graph::new(data);
-    let deck = get_deck(&graph);
-    let mut polies = Vec::<Vec<u64>>::new();
-
-    let mut thread_handles = Vec::<thread::JoinHandle<Polynomial<u64>>>::new();
-
-    // now get that polynomial!
-    let graph_poly = _calculate_matching_polynomial_binary(graph);
-    polies.push(graph_poly.data().to_vec());
-
-    for graph in deck {
-        // spawn a thread for each graph in the deck
-        let handle = thread::spawn(move || {
-            _calculate_matching_polynomial_binary(graph)
-        });
-        thread_handles.push(handle);
-        //let graph_poly = _calculate_matching_polynomial_binary(graph);
-        //polies.push(graph_poly.data().to_vec());
-    }
-    for handle in thread_handles {
-        let graph_poly = handle.join().unwrap();
-        polies.push(graph_poly.data().to_vec());
-    }
-
-    Ok(polies)
-
-}
-
-#[pyfunction]
-pub fn calculate_matching_polynomial_from_binary_representation(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
-    let graph = Graph::new(data);
-    let deck = get_deck(&graph);
-    let mut polies = Vec::<Vec<u64>>::new();
-
-    //let mut thread_handles = Vec::<thread::JoinHandle<Polynomial<u64>>>::new();
-
-    // now get that polynomial!
-    let graph_poly = _calculate_matching_polynomial_binary(graph);
-    polies.push(graph_poly.data().to_vec());
-
-    for graph in deck {
-        // spawn a thread for each graph in the deck
-        let poly = _calculate_matching_polynomial_binary(graph);
-        polies.push(poly.data().to_vec());
-    }
-
-    Ok(polies)
-}
-
 pub fn _calculate_matching_polynomial_binary(graph: Graph) -> Polynomial<u64> {
     // the base case for the process is that the graph is edgeless.
     // This means that, of the remaining nodes, each of their integer
@@ -274,73 +224,3 @@ pub fn _calculate_matching_polynomial_binary(graph: Graph) -> Polynomial<u64> {
         return poly
     }
 } 
-
-//fn drop_last_nodes(graph: &Graph) -> Graph {
-    //// first, get the top node, and its edge.
-    ////  the logic will be the same as in the drop_last_edge function
-    ////  so we will refactor this out.
-    //let new_data = graph.data.clone();
-    //let dropped_node = graph
-        //.data
-        //.iter()
-        //.enumerate()
-        //.filter(|(_, x)| x > &&(0 as usize))
-        //.next();
-
-    //let mut new_graph = Graph::new(new_data);
-    //if !dropped_node.is_none() {
-        //let dropped_node = dropped_node.unwrap();
-        //new_graph.remove_node(dropped_node.0);
-    //}
-    //new_graph
-//}
-//fn  get_relevant_edge(graph: &Graph) -> (usize, usize) {
-    //// since the nodes are ordered in decreasing order of degree, we can
-    //// just drop the first edge we find, on the first still-relevant node.
-    //let starting_node = graph.data
-        //.iter()
-        //.enumerate()
-        //.filter(|(_, x)| (x > &&(0 as usize)))
-        //.next()
-        //.unwrap()
-        //.0;
-
-    //// the first reelvant node is a number like: (1, 0, 0, 1, 1, 0, 1). 
-    //// the next one would be e.g.:               (0, 1, 1, 0, 1, 1, 0) 
-    //// i.e. 1 on the diagonal.
-    //// The RELEVANT data then is the node minus the 1 on the diagonal is 
-    //// node_data - (1<<node_index)
-    //let starting_node_data = graph.data[starting_node];
-    ////let starting_node_data = graph.data[starting_node] - (1<<starting_node);
-    
-    //// now we have the relevant starting node, we can calculate the edge to drop
-    //// by finding the first bit that is set to 1
-                                                                            
-    ////The first relevant node has some leading zeros up to its relevant diagonal,
-    ////a 1, and then a set of leading zeros up to the first edge.
-    //// Comparison point: number of zeros from start of adjacency until the graph information
-    //// starts.
-    //let comparison_point = starting_node_data.leading_zeros() as usize - starting_node;
-    //// clean starting node data: the integer corresponding to the node with its first power of two
-    //// removed
-    //let clean_starting_node_data = starting_node_data - (1<<starting_node);
-
-    ////  the edge to drop goes between the starting node and the end of the first edge
-    //let end_node = clean_starting_node_data.leading_zeros() as usize - comparison_point;
-
-    //(starting_node, end_node)
-//}
-
-//fn drop_last_edge(graph: &Graph) -> Graph {
-    //let new_data = graph.data.clone();
-    ////let dropped_edge = starting_node_data.leading_zeros() as usize - starting_node_data.leading_zeros() as usize;
-
-    //println!("starting_node: {}", starting_node);
-    //println!("dropped edge (i.e. leading zeros): {}", end_node);
-    //println!("MAX_NODES: {}", MAX_NODES);
-
-    //// return a graph with the edge dropped
-    //let mut new_graph = Graph::new(new_data);
-    //new_graph.remove_edge(starting_node, end_node);
-    //new_graph
-//}

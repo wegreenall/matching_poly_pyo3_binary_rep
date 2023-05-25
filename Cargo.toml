@@ -10,6 +10,7 @@ petgraph = "0.6.3"
 polynomial = "0.2.4"
 pyo3 = "0.18.1"
 serde = "1.0.152"
+matching_poly_lib = {path = "../matching_poly_lib"}
 
 [lib]
 name = "matching_rs"
