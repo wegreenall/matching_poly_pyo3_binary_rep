@@ -9,5 +9,6 @@ pub use functions::{
                    calculate_matching_polynomial_from_binary_representation_multithreaded,
                    calculate_matching_polynomial_from_edges,
                    calculate_matching_polynomial_from_adjacency,
+                   calculate_weighted_matching_polynomial
                    };
 

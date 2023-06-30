@@ -1,10 +1,13 @@
 extern crate matching_poly_lib;
-use matching_poly_lib::matching as matching;
+use matching_poly_lib::graph_matching as matching;
+use matching_poly_lib::weighted_graph_matching as weighted_matching;
 use matching_poly_lib::matching_raw_memory as matching_raw;
+use matching_poly_lib::petgraph as petgraph_matching;
 use pyo3::prelude::*;
-use matching::{get_matching_polies_stable_graph, get_deck, get_weighted_deck, Graph, WeightedGraph, _calculate_matching_polynomial_binary, _calculate_weighted_matching_polynomial_binary, calculate_matching_polynomial_pointer as calculate_matching_polynomial_pointer_rs};
-
+use matching::{get_deck, Graph, _calculate_matching_polynomial_binary,  calculate_matching_polynomial_pointer as calculate_matching_polynomial_pointer_rs};
+use weighted_matching::{WeightedGraph,_calculate_weighted_matching_polynomial_binary, get_weighted_deck}; 
 use matching_raw::{calculate_matching_polynomial_raw, GraphProperties, get_deck as get_raw_deck};
+use petgraph_matching::{get_matching_polies_stable_graph};
 
 use petgraph::{Undirected, stable_graph::StableGraph};
 use petgraph::graph::{UnGraph, NodeIndex};
@@ -166,10 +169,10 @@ pub fn calculate_matching_polynomial_from_binary_representation_multithreaded(da
 
 /// TODO: Implement the function for Weighted graphs!
 #[pyfunction]
-pub fn calculate_weighted_matching_polynomial_from_binary_representation(data: [usize; mem::size_of::<usize>()*8], weights: [u64; MAX_NODES * MAX_NODES]) -> Result<Vec<Vec<u64>>, std::io::Error> {
+pub fn calculate_weighted_matching_polynomial(data: [usize; mem::size_of::<usize>()*8], weights: [f32; MAX_NODES * MAX_NODES]) -> Result<Vec<Vec<f32>>, std::io::Error> {
     let weighted_graph = WeightedGraph::from(data, weights);
     let deck = get_weighted_deck(&weighted_graph);
-    let mut polies = Vec::<Vec<u64>>::new();
+    let mut polies = Vec::<Vec<f32>>::new();
 
     // now get that polynomial!
     let graph_poly = _calculate_weighted_matching_polynomial_binary(weighted_graph);

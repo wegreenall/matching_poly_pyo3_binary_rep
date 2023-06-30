@@ -1,6 +1,7 @@
 extern crate matching_poly_lib;
-use matching_poly_lib::matching as matching;
+use matching_poly_lib::graph_matching as matching;
 use matching_poly_lib::matching_raw_memory as matching_raw;
+use matching_poly_lib::weighted_graph_matching as weighted_matching;
 use pyo3::prelude::*;
 use std::mem;
 mod test_functions;
@@ -13,6 +14,7 @@ use functions::{calculate_matching_polynomial_pointer,
                 calculate_matching_polynomial_from_binary_representation_multithreaded,
                 calculate_matching_polynomial_from_edges,
                 calculate_matching_polynomial_from_adjacency,
+                calculate_weighted_matching_polynomial,
                 raw_calculate_matching_polynomial,
                 raw_calculate_matching_polynomial_multithreaded
                };
@@ -28,6 +30,9 @@ fn matching_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(calculate_matching_polynomial_from_binary_representation_multithreaded))?;
     m.add_wrapped(wrap_pyfunction!(calculate_matching_polynomial_pointer))?;
     m.add_wrapped(wrap_pyfunction!(calculate_matching_polynomial_pointer_multithreaded))?;
+
+    m.add_wrapped(wrap_pyfunction!(calculate_weighted_matching_polynomial))?;
+
     m.add_wrapped(wrap_pyfunction!(raw_calculate_matching_polynomial))?;
     m.add_wrapped(wrap_pyfunction!(raw_calculate_matching_polynomial_multithreaded))?;
 
