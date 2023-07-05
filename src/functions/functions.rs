@@ -111,6 +111,8 @@ pub fn calculate_matching_polynomial_pointer_multithreaded(data: [usize; mem::si
 }
 
 
+/// This looks redundant as I think the binary representation is already being
+/// used in the other one
 #[pyfunction]
 pub fn calculate_matching_polynomial_from_binary_representation(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
     let graph = Graph::from(data);
