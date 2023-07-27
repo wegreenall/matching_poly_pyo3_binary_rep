@@ -7,6 +7,7 @@ use crate::weighted_matching::WeightedGraph;
 use crate::matching::{Graph, _calculate_matching_polynomial_binary};
 
 const MAX_NODES: usize = mem::size_of::<usize>()*8;
+
 /// This function tests whether or not the pointer_multithreaded function works
 ///  as wrutten, it appears to produce the same 
 #[pyfunction]

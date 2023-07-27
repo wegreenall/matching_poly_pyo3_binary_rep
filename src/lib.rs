@@ -19,7 +19,6 @@ use functions::{calculate_matching_polynomial_pointer,
                 raw_calculate_matching_polynomial_multithreaded
                };
 
-
 const MAX_NODES: usize = mem::size_of::<usize>()*8;
 
 #[pymodule]
@@ -30,16 +29,16 @@ fn matching_rs(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(calculate_matching_polynomial_from_binary_representation_multithreaded))?;
     m.add_wrapped(wrap_pyfunction!(calculate_matching_polynomial_pointer))?;
     m.add_wrapped(wrap_pyfunction!(calculate_matching_polynomial_pointer_multithreaded))?;
-
     m.add_wrapped(wrap_pyfunction!(calculate_weighted_matching_polynomial))?;
 
     m.add_wrapped(wrap_pyfunction!(raw_calculate_matching_polynomial))?;
     m.add_wrapped(wrap_pyfunction!(raw_calculate_matching_polynomial_multithreaded))?;
+    Ok(())
+}
 
-    // test functions
+#[pymodule]
+fn matching_rs_tests(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(basic_multithreaded_test))?;
     m.add_wrapped(wrap_pyfunction!(pointer_multithreaded_test))?;
-    //m.add_wrapped(wrap_pyfunction!(raw_multithreaded_test))?;
-    //m.add_wrapped(wrap_pyfunction!(raw_test))?;
     Ok(())
 }
