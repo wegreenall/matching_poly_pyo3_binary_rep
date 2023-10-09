@@ -1,14 +1,21 @@
 mod functions;
+mod weighted_functions;
 
 pub use functions::{
-                   raw_calculate_matching_polynomial,
-                   raw_calculate_matching_polynomial_multithreaded,
-                   calculate_matching_polynomial_pointer,
-                   calculate_matching_polynomial_pointer_multithreaded,
-                   calculate_matching_polynomial_from_binary_representation,
-                   calculate_matching_polynomial_from_binary_representation_multithreaded,
-                   calculate_matching_polynomial_from_edges,
-                   calculate_matching_polynomial_from_adjacency,
-                   calculate_weighted_matching_polynomial
+                   adaptive_matchings,
+                   pointer_matchings,
+                   pointer_matchings_multithreaded,
+                   binary_matchings,
+                   binary_matchings_multithreaded,
+                   edge_matchings,
+                   adjacency_matchings,
                    };
 
+pub use weighted_functions::{
+                   weighted_matchings,
+                   weighted_matchings_parallel,
+                   weighted_matchings_non_parallel,
+                   weighted_matchings_addresses,
+                   get_weighted_poly_from_addresses,
+                   get_poly_addresses
+};
