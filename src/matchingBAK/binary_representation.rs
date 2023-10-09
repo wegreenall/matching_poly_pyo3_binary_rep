@@ -182,19 +182,6 @@ impl std::fmt::Display for Graph {
     }
 }
 
-
-pub fn get_deck(graph: &Graph) -> Vec<Graph>{
-    let mut deck = Vec::<Graph>::new();
-    let graph_size = graph.graph_size();
-    for i in 0..graph_size {
-        //println!("current graph: {}", current_graph);
-        let mut current_graph = graph.clone();
-        current_graph.remove_node(i, graph_size); 
-        deck.push(current_graph.clone());
-    }
-    deck
-}
-
 pub fn _calculate_matching_polynomial_binary(graph: Graph) -> Polynomial<u64> {
     // the base case for the process is that the graph is edgeless.
     // This means that, of the remaining nodes, each of their integer
