@@ -2,9 +2,10 @@ use pyo3::prelude::*;
 use std::thread;
 use std::mem;
 
-use crate::matching::calculate_matching_polynomial_pointer;
+use matching_poly_lib::binary_graph_matching::calculate_matching_polynomial_pointer;
+use matching_poly_lib::binary_graph_matching::{BinaryGraph, _calculate_matching_polynomial_binary};
+use matching_poly_lib::traits::Graph;
 use crate::weighted_matching::WeightedGraph;
-use crate::matching::{Graph, _calculate_matching_polynomial_binary};
 
 const MAX_NODES: usize = mem::size_of::<usize>()*8;
 
@@ -13,7 +14,7 @@ const MAX_NODES: usize = mem::size_of::<usize>()*8;
 #[pyfunction]
 pub fn pointer_multithreaded_test(data: [usize; MAX_NODES]) -> Result<Vec<Vec<u64>>, std::io::Error> {
     // set up the graph and the polies vector
-    let graph = Graph::from(data);
+    let graph = BinaryGraph::from(data);
     let graph_size = graph.graph_size();
     let graph_clone_list = [graph.clone(), graph.clone(), graph.clone(), graph.clone(), graph.clone(), graph.clone(), graph.clone(), graph.clone()];
     let mut polies = Vec::<Vec<u64>>::new();
@@ -42,7 +43,7 @@ pub fn pointer_multithreaded_test(data: [usize; MAX_NODES]) -> Result<Vec<Vec<u6
 #[pyfunction]
 pub fn basic_multithreaded_test(data: [usize; MAX_NODES]) -> Result<Vec<Vec<u64>>, std::io::Error> {
     // set up the graph and the polies vector
-    let graph = Graph::from(data);
+    let graph = BinaryGraph::from(data);
     let graph_size = graph.graph_size();
     let graph_clone_list = [graph.clone(), graph.clone(), graph.clone(), graph.clone(), graph.clone(), graph.clone(), graph.clone(), graph.clone()];
     let mut polies = Vec::<Vec<u64>>::new();
