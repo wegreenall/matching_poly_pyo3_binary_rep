@@ -1,13 +1,14 @@
 extern crate matching_poly_lib;
-use matching_poly_lib::graph_matching as matching;
-use matching_poly_lib::weighted_graph_matching as weighted_matching;
+
+use matching_poly_lib::{binary_graph_matching as binary_matching, calculate_matching_polynomial_adaptive};
+use matching_poly_lib::traits::{Graph, get_deck};
 use matching_poly_lib::matching_raw_memory as matching_raw;
 use matching_poly_lib::petgraph as petgraph_matching;
 use pyo3::prelude::*;
-use matching::{get_deck, Graph, _calculate_matching_polynomial_binary,  calculate_matching_polynomial_pointer as calculate_matching_polynomial_pointer_rs};
-use weighted_matching::{WeightedGraph,_calculate_weighted_matching_polynomial_binary, get_weighted_deck}; 
-use matching_raw::{calculate_matching_polynomial_raw, GraphProperties, get_deck as get_raw_deck};
-use petgraph_matching::{get_matching_polies_stable_graph};
+use binary_matching::{_calculate_matching_polynomial_binary, calculate_matching_polynomial_pointer as calculate_matching_polynomial_pointer_rs};
+use binary_matching::BinaryGraph;
+use matching_raw::{calculate_matching_polynomial_raw, GraphProperties};
+use petgraph_matching::get_matching_polies_stable_graph;
 
 use petgraph::{Undirected, stable_graph::StableGraph};
 use petgraph::graph::{UnGraph, NodeIndex};
@@ -17,58 +18,30 @@ use std::thread;
 
 const MAX_NODES: usize = mem::size_of::<usize>()*8;
 
-#[pyfunction]
-pub fn raw_calculate_matching_polynomial(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
-    let graph = data;
+#[pyfunction] 
+pub fn adaptive_matchings(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<i64>>, std::io::Error> {
+    let graph = BinaryGraph::from(data);
     let graph_size = graph.graph_size();
-    let deck = get_raw_deck(&graph);
-
-    let mut polies = Vec::<Vec<u64>>::new();
+    //let deck = get_deck(graph);
+    let mut polies = Vec::<Vec<i64>>::new();
 
     // now get that polynomial!
-    let graph_poly = calculate_matching_polynomial_raw(graph);
+    let graph_poly = calculate_matching_polynomial_adaptive(graph);
     polies.push(graph_poly[..=graph_size].to_vec());
 
-    for graph in deck {
-        // spawn a thread for each graph in the deck
-        let poly = calculate_matching_polynomial_raw(graph);
-        polies.push(poly[..graph_size].to_vec());
-    }
-    Ok(polies)
-}
-
-#[pyfunction]
-pub fn raw_calculate_matching_polynomial_multithreaded(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
-    let graph = data;
-    let graph_size = graph.graph_size();
-    let deck = get_raw_deck(&graph);
-
-    let mut polies = Vec::<Vec<u64>>::new();
-
-    let mut thread_handles = Vec::<thread::JoinHandle<[u64; mem::size_of::<usize>()*8]>>::new();
-
-    let poly = calculate_matching_polynomial_raw(graph);
-    polies.push(poly[..=graph_size].to_vec());
-
-    for graph in deck {
-        // spawn a thread for each graph in the deck
-        let handle = thread::spawn(move || {
-            calculate_matching_polynomial_raw(graph)
-        });
-        thread_handles.push(handle);
-    }
-    for handle in thread_handles {
-        let poly = handle.join().unwrap();
-        polies.push(poly[..graph_size].to_vec());
-    }
+    //for graph in deck {
+        //// spawn a thread for each graph in the deck
+        //let mut poly = calculate_matching_polynomial_adaptive(graph);
+        //polies.push(poly[..graph_size].to_vec());
+    //}
     Ok(polies)
 }
 
 #[pyfunction] 
-pub fn calculate_matching_polynomial_pointer(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
-    let graph = Graph::from(data);
+pub fn pointer_matchings(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
+    let graph = BinaryGraph::from(data);
     let graph_size = graph.graph_size();
-    let deck = get_deck(&graph);
+    let deck = get_deck(graph);
     let mut polies = Vec::<Vec<u64>>::new();
 
     // now get that polynomial!
@@ -83,11 +56,12 @@ pub fn calculate_matching_polynomial_pointer(data: [usize; mem::size_of::<usize>
     Ok(polies)
 }
 
+
 #[pyfunction] 
-pub fn calculate_matching_polynomial_pointer_multithreaded(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
-    let graph = Graph::from(data);
+pub fn pointer_matchings_multithreaded(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
+    let graph = BinaryGraph::from(data);
     let graph_size = graph.graph_size();
-    let deck = get_deck(&graph);
+    let deck = get_deck(graph);
 
     let mut polies = Vec::<Vec<u64>>::new();
 
@@ -111,12 +85,13 @@ pub fn calculate_matching_polynomial_pointer_multithreaded(data: [usize; mem::si
 }
 
 
+
 /// This looks redundant as I think the binary representation is already being
 /// used in the other one
 #[pyfunction]
-pub fn calculate_matching_polynomial_from_binary_representation(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
-    let graph = Graph::from(data);
-    let deck = get_deck(&graph);
+pub fn binary_matchings(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
+    let graph = BinaryGraph::from(data);
+    let deck = get_deck(graph);
     let mut polies = Vec::<Vec<u64>>::new();
 
     // now get that polynomial!
@@ -134,10 +109,10 @@ pub fn calculate_matching_polynomial_from_binary_representation(data: [usize; me
 
 
 #[pyfunction]
-pub fn calculate_matching_polynomial_from_binary_representation_multithreaded(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
+pub fn binary_matchings_multithreaded(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
     // set up the graph and the polies vector
-    let graph = Graph::from(data);
-    let deck = get_deck(&graph);
+    let graph = BinaryGraph::from(data);
+    let deck = get_deck(graph);
     let mut polies = Vec::<Vec<u64>>::new();
 
     // set up the thread handles
@@ -169,27 +144,9 @@ pub fn calculate_matching_polynomial_from_binary_representation_multithreaded(da
 
 }
 
-/// TODO: Implement the function for Weighted graphs!
-#[pyfunction]
-pub fn calculate_weighted_matching_polynomial(data: [usize; mem::size_of::<usize>()*8], weights: [f32; MAX_NODES * MAX_NODES]) -> Result<Vec<Vec<f32>>, std::io::Error> {
-    let weighted_graph = WeightedGraph::from(data, weights);
-    let deck = get_weighted_deck(&weighted_graph);
-    let mut polies = Vec::<Vec<f32>>::new();
-
-    // now get that polynomial!
-    let graph_poly = _calculate_weighted_matching_polynomial_binary(weighted_graph);
-    polies.push(graph_poly.data().to_vec());
-
-    for weighted_graph in deck {
-        // spawn a thread for each graph in the deck
-        let poly = _calculate_weighted_matching_polynomial_binary(weighted_graph);
-        polies.push(poly.data().to_vec());
-    }
-    Ok(polies)
-}
 
 #[pyfunction]
-pub fn calculate_matching_polynomial_from_adjacency(input_graph: Vec<Vec<i32>>) -> Result<Vec<Vec<u64>>, std::io::Error> {
+pub fn adjacency_matchings(input_graph: Vec<Vec<i32>>) -> Result<Vec<Vec<u64>>, std::io::Error> {
     // Produce the graph
     // First, build the iterator of elements
     // If a node has no edges attached to it, construct a node, else construct the edges
@@ -209,15 +166,60 @@ pub fn calculate_matching_polynomial_from_adjacency(input_graph: Vec<Vec<i32>>) 
 
     }
     let graph = StableGraph::<i32, (), Undirected>::from(graph);
-    
     Ok(get_matching_polies_stable_graph(graph))
 } 
 
 
 #[pyfunction]
-pub fn calculate_matching_polynomial_from_edges(graph: Vec<(u32, u32)>) -> Result<Vec<Vec<u64>>, std::io::Error> {
+pub fn edge_matchings(graph: Vec<(u32, u32)>) -> Result<Vec<Vec<u64>>, std::io::Error> {
     // Produce the graph
     let graph = UnGraph::<i32, ()>::from_edges(&graph);
     let graph = StableGraph::<i32, (), Undirected>::from(graph);
     Ok(get_matching_polies_stable_graph(graph))
 } 
+//#[pyfunction]
+//pub fn raw_matchings(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
+    //let graph = data;
+    //let graph_size = graph.graph_size();
+    //let deck = get_raw_deck(&graph);
+
+    //let mut polies = Vec::<Vec<u64>>::new();
+
+    //// now get that polynomial!
+    //let graph_poly = calculate_matching_polynomial_raw(graph);
+    //polies.push(graph_poly[..=graph_size].to_vec());
+
+    //for graph in deck {
+        //// spawn a thread for each graph in the deck
+        //let poly = calculate_matching_polynomial_raw(graph);
+        //polies.push(poly[..graph_size].to_vec());
+    //}
+    //Ok(polies)
+//}
+
+//#[pyfunction]
+//pub fn raw_matchings_multithreaded(data: [usize; mem::size_of::<usize>()*8]) -> Result<Vec<Vec<u64>>, std::io::Error> {
+    //let graph = data;
+    //let graph_size = graph.graph_size();
+    //let deck = get_raw_deck(&graph);
+
+    //let mut polies = Vec::<Vec<u64>>::new();
+
+    //let mut thread_handles = Vec::<thread::JoinHandle<[u64; mem::size_of::<usize>()*8]>>::new();
+
+    //let poly = calculate_matching_polynomial_raw(graph);
+    //polies.push(poly[..=graph_size].to_vec());
+
+    //for graph in deck {
+        //// spawn a thread for each graph in the deck
+        //let handle = thread::spawn(move || {
+            //calculate_matching_polynomial_raw(graph)
+        //});
+        //thread_handles.push(handle);
+    //}
+    //for handle in thread_handles {
+        //let poly = handle.join().unwrap();
+        //polies.push(poly[..graph_size].to_vec());
+    //}
+    //Ok(polies)
+//}
